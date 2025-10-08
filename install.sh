@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# --- The Brains: Figure out where we are installing from ---
+# Get the URL of the remote git repository
+ORIGIN_URL=$(git config --get remote.origin.url)
+# Transform it into the "raw" content URL that curl needs
+RAW_BASE_URL=$(echo "$ORIGIN_URL" | sed 's|github.com|raw.githubusercontent.com|' | sed 's|\.git||')/main
+
+echo "Installation source detected: $RAW_BASE_URL"
+
 # Stop and disable any old running service
 systemctl stop tuxprotect.service > /dev/null 2>&1
 systemctl disable tuxprotect.service > /dev/null 2>&1
@@ -14,26 +22,21 @@ cp -r res /usr/share/tuxprotect/res/
 cp tuxprotectgui /usr/bin/tuxprotectgui
 chmod +x /usr/bin/tuxprotectgui
 
-# --- Install the new fixed scripts ---
-
-# 1. Install the daemon script
+# --- Install the fixed scripts and service file ---
 cp tuxprotect /usr/bin/tuxprotect
 chmod +x /usr/bin/tuxprotect
-
-# 2. Install the GUI indicator script
 cp tuxprotect-gui /usr/bin/tuxprotect-gui
 chmod +x /usr/bin/tuxprotect-gui
-
-# 3. Install the systemd service file
 cp tuxprotect.service /etc/systemd/system/tuxprotect.service
-
-# 4. Install the autostart file for the GUI
 mkdir -p /etc/xdg/autostart
 cp tuxprotect-gui.desktop /etc/xdg/autostart/tuxprotect-gui.desktop
 
-# --- Final steps ---
+# --- The Magic: Inject the dynamic URL into the installed files ---
+# This replaces the placeholder __RAW_BASE_URL__ with the real one
+sed -i "s|__RAW_BASE_URL__|${RAW_BASE_URL}|g" /etc/systemd/system/tuxprotect.service
+sed -i "s|__RAW_BASE_URL__|${RAW_BASE_URL}|g" /usr/bin/tuxprotect
 
-# Reload systemd, enable and start the service
+# --- Final steps ---
 echo "Reloading systemd and starting Tux Protect daemon..."
 systemctl daemon-reload
 systemctl enable tuxprotect.service
