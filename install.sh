@@ -1,9 +1,27 @@
 #!/bin/bash
 
+# --- Ask for user confirmation ---
+echo '
+#######################################################
+#                                                     #
+#                      Tux Protect (Fixed)            #
+#                                                     #
+#######################################################'
+echo 'You are about to install a community-fixed version of "Tux Protect".
+WARNING!!! This script has not been tested sufficiently, it may cause damage.
+No uninstall tool will be provided.
+This script updates itself from the source it was installed from.
+Do you agree to proceed? If yes, write "I agree"'
+echo '#######################################################'
+read response
+
+if [ "$response" != "I agree" ] && [ "$response" != "i agree" ]; then
+    echo "Installation aborted by user."
+    exit 1
+fi
+
 # --- The Brains: Figure out where we are installing from ---
-# Get the URL of the remote git repository
 ORIGIN_URL=$(git config --get remote.origin.url)
-# Transform it into the "raw" content URL that curl needs
 RAW_BASE_URL=$(echo "$ORIGIN_URL" | sed 's|github.com|raw.githubusercontent.com|' | sed 's|\.git||')/main
 
 echo "Installation source detected: $RAW_BASE_URL"
@@ -32,7 +50,6 @@ mkdir -p /etc/xdg/autostart
 cp tuxprotect-gui.desktop /etc/xdg/autostart/tuxprotect-gui.desktop
 
 # --- The Magic: Inject the dynamic URL into the installed files ---
-# This replaces the placeholder __RAW_BASE_URL__ with the real one
 sed -i "s|__RAW_BASE_URL__|${RAW_BASE_URL}|g" /etc/systemd/system/tuxprotect.service
 sed -i "s|__RAW_BASE_URL__|${RAW_BASE_URL}|g" /usr/bin/tuxprotect
 
