@@ -4,40 +4,12 @@ After=network-online.target
 
 [Service]
 Type=simple
-# עדכון עצמי דינמי - כל השלבים בסדר הנכון
 ExecStartPre=-/usr/sbin/iptables -F
 ExecStartPre=-/usr/bin/chattr -i /usr/bin/tuxprotect
 ExecStartPre=-/usr/bin/curl -o /usr/bin/tuxprotect -s --connect-timeout 10 -m 15 -k __RAW_BASE_URL__/tuxprotect
 ExecStartPre=-/usr/bin/chmod +x /usr/bin/tuxprotect
 ExecStartPre=-/usr/bin/chattr +i /usr/bin/tuxprotect
-# הפעלת הדמון
 ExecStart=/usr/bin/tuxprotect
 
 [Install]
-WantedBy=multi-user.target```
-
----
-
-### מה לעשות עכשיו (התהליך המלא והאחרון)
-
-1.  **הוסף את הקובץ החסר:**
-    *   **השג את הקובץ `tuxprotectgui` המקורי.** אם אין לך אותו, הורד את פרויקט המקור כ-ZIP, חלץ אותו, ומצא את הקובץ `tuxprotectgui`.
-    *   **העתק את הקובץ הזה** לתוך תיקיית הפרויקט המקומית שלך (`~/Downloads/פרוייקט/cswvsvs/tuxprotect`).
-
-2.  **תקן את `tuxprotect.service`:**
-    *   פתח את הקובץ `tuxprotect.service` במאגר המקומי שלך והחלף את כל התוכן שלו בקוד המתוקן שנתתי למעלה.
-
-3.  **העלה הכל (כולל הקובץ החדש) ל-GitHub:**
-    *   נווט לתיקיית הפרויקט בטרמינל.
-    *   הרץ את הפקודות:
-        ```bash
-        git add .
-        git commit -m "Add missing binary and fix service file syntax"
-        git push
-        ```
-
-4.  **בדוק על מכונה וירטואלית נקייה:**
-    *   שחזר ל-Snapshot.
-    *   הרץ את פקודת ההתקנה שלך.
-
-הפעם, כל החלקים נמצאים במקום. ההתקנה תמצא את `tuxprotectgui`, קובץ השירות יהיה תקין, והכל אמור לעבוד בצורה חלקה מקצה לקצה. אנחנו ממש בסוף.
+WantedBy=multi-user.target
