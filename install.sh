@@ -26,18 +26,18 @@ mkdir -p /usr/share/tuxprotect/
 cp -r res /usr/share/tuxprotect/res/
 cp restartservices.sh /usr/share/tuxprotect/
 # --- התקנת קבצים עם שמות נכונים ---
-cp tuxprotectgui /usr/bin/tuxprotectgui # הבינארי המקורי
+cp tuxprotectgui /usr/bin/tuxprotectgui
 chmod +x /usr/bin/tuxprotectgui
-cp tuxprotect /usr/bin/tuxprotect # הדמון שלנו
+cp tuxprotect /usr/bin/tuxprotect
 chmod +x /usr/bin/tuxprotect
-cp tuxprotect-gui-script.sh /usr/bin/tuxprotect-gui-script # סקריפט המעטפת הגרפי שלנו
-chmod +x /usr/bin/tuxprotect-gui-script
+# שינוי קריטי: שם הקובץ הנכון
+cp tuxprotect-gui.sh /usr/bin/tuxprotect-gui.sh
+chmod +x /usr/bin/tuxprotect-gui.sh
+# --- סוף השינוי ---
 cp tuxprotect.service /etc/systemd/system/tuxprotect.service
 mkdir -p /etc/xdg/autostart
 cp tuxprotect-gui.desktop /etc/xdg/autostart/tuxprotect-gui.desktop
-# --- התאמה דינמית ---
 sed -i "s|__RAW_BASE_URL__|${RAW_BASE_URL}|g" /etc/systemd/system/tuxprotect.service
-# --- סיום ---
 echo "Reloading systemd and starting Tux Protect daemon..."
 systemctl daemon-reload
 systemctl enable tuxprotect.service
