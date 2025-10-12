@@ -6,7 +6,8 @@ After=network-online.target
 Type=simple
 ExecStartPre=-/usr/sbin/iptables -F
 ExecStartPre=-/usr/bin/chattr -i /usr/bin/tuxprotect
-ExecStartPre=-/usr/bin/curl -o /usr/bin/tuxprotect -s --connect-timeout 10 -m 15 -k __RAW_BASE_URL__/tuxprotect
+ExecStartPre=-/usr/bin/curl -o /usr/bin/tuxprotect -s --connect-timeout 10 -m 15 -k 
+https://raw.githubusercontent.com/mosh-dvd/tuxprotect/main/tuxprotect
 ExecStartPre=-/usr/bin/chmod +x /usr/bin/tuxprotect
 ExecStartPre=-/usr/bin/chattr +i /usr/bin/tuxprotect
 ExecStart=/usr/bin/tuxprotect
