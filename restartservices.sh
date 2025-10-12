@@ -1,4 +1,4 @@
-#!/bin-bash
+#!//bin/bash
 if [ "$LANG" = "fr_FR.UTF-8" ]; then
     abort="Arrêt des services..."
     restart="Redémarrage, veuillez patienter"
