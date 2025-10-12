@@ -3,6 +3,45 @@ if [[ $EUID -ne 0 ]]; then
    echo "Error! This script must be run with root privileges. Use: sudo ./install.sh" 
    exit 1
 fi
+# ==============================================================================
+#                      NetFree Certificate Fix Section
+# ==============================================================================
+echo "--> Checking for NetFree Certificate Trust..."
+
+# Function to check the certificate using curl
+check_cert() {
+    curl -s --head --connect-timeout 5 "https://api.internal.netfree.link" > /dev/null
+}
+
+# First check: Does it work out of the box?
+if check_cert; then
+    echo "    NetFree certificate is already trusted. Proceeding."
+else
+    echo "    NetFree certificate is NOT trusted. Attempting automatic fix..."
+    
+    # Attempt to fix by running NetFree's official script
+    if curl -sL https://netfree.link/dl/unix-ca.sh | sudo sh; then
+        echo "    NetFree script executed. Re-checking trust..."
+        
+        # Second check: Did the script fix the problem?
+        if check_cert; then
+            echo "    SUCCESS: NetFree certificate is now trusted."
+        else
+            echo "    ERROR: Failed to trust NetFree certificate even after running the script."
+            echo "    Please check your internet connection and try again."
+            echo "    Aborting installation."
+            exit 1
+        fi
+    else
+        echo "    ERROR: Failed to download or execute NetFree's certificate script."
+        echo "    Please check your internet connection."
+        echo "    Aborting installation."
+        exit 1
+    fi
+fi
+# ==============================================================================
+#                        End of Certificate Fix Section
+# ==============================================================================
 echo '
 #######################################################
 #                Tux Protect (Community Fixed)        #
