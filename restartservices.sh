@@ -1,4 +1,4 @@
-#!//bin/bash
+#!/bin/bash
 if [ "$LANG" = "fr_FR.UTF-8" ]; then
     abort="Arrêt des services..."
     restart="Redémarrage, veuillez patienter"
@@ -20,9 +20,8 @@ fi
 # נשתמש ב-systemctl כדי לאתחל את השירות בצורה נכונה
 echo "10" ; sleep 1
 echo "# $abort" ;
-# הפקודה הבאה דורשת הרשאות מנהל, zenity לא יכול לבקש אותן.
-# לכן, נצטרך להוסיף הרשאה מיוחדת.
-pkexec systemctl restart tuxprotect.service
+# קריאה מפורשת לפעולה שהוגדרה ב-PolicyKit
+pkexec --action org.tuxprotect.restart
 echo "50" ; sleep 1
 echo "# $start" ; sleep 2
 echo "100" ; sleep 1
