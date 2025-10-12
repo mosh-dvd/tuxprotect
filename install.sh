@@ -44,6 +44,12 @@ chmod +x /usr/bin/tuxprotect-gui.sh
 cp tuxprotect.service /etc/systemd/system/tuxprotect.service
 mkdir -p /etc/xdg/autostart
 cp tuxprotect-gui.desktop /etc/xdg/autostart/tuxprotect-gui.desktop
+cp restartservices.sh /usr/share/tuxprotect/
+cp check-problems.sh /usr/share/tuxprotect/
+cp notification.sh /usr/share/tuxprotect/
+# הוספת קובץ ההרשאות
+mkdir -p /usr/share/polkit-1/actions/
+cp org.freedesktop.policykit.pkexec.tuxprotect.policy /usr/share/polkit-1/actions/
 sed -i "s|__RAW_BASE_URL__|${RAW_BASE_URL}|g" /etc/systemd/system/tuxprotect.service
 echo "Reloading systemd and starting Tux Protect daemon..."
 systemctl daemon-reload
