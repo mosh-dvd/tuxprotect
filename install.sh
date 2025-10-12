@@ -29,7 +29,14 @@ else
         else
             echo "    ERROR: Failed to trust NetFree certificate even after running the script."
             echo "    Please check your internet connection and try again."
-            echo "    Aborting installation."
+            echo "    Aborting installation.
+            echo "Installing helper scripts and policies..."
+            # Copy the new helper script and make it executable
+            cp ./restart-helper.sh /usr/share/tuxprotect/restart-helper.sh
+            chmod +x /usr/share/tuxprotect/restart-helper.sh
+               
+            # Copy the new PolicyKit rule
+            cp ./org.tuxprotect.restart.policy /usr/share/polkit-1/actions/org.tuxprotect.restart.policy
             exit 1
         fi
     else
