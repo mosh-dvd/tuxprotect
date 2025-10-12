@@ -1,6 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Tux Protect Indicator
-Exec=/usr/bin/tuxprotect-gui
-Comment=Displays the status of Tux Protect network filter
-X-GNOME-Autostart-enabled=true
