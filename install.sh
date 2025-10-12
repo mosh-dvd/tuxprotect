@@ -15,16 +15,14 @@ if [ "$response" != "I agree" ] && [ "$response" != "i agree" ]; then
     echo "Installation aborted."
     exit 1
 fi
-
-# ודא שכל הקבצים הדרושים קיימים לפני שמתחילים
-REQUIRED_FILES=("tuxprotect" "tuxprotectgui" "tuxprotect.service" "tuxprotect-gui.sh" "tuxprotect-gui.desktop" "res" "restartservices.sh")
+# ודא שכל הקבצים הדרושים קיימים
+REQUIRED_FILES=("tuxprotect" "tuxprotectgui" "tuxprotect.service" "tuxprotect-gui.sh" "tuxprotect-gui.desktop" "res" "restartservices.sh" "check-problems.sh")
 for f in "${REQUIRED_FILES[@]}"; do
     if [ ! -e "$f" ]; then
         echo "Error: Required file or directory '$f' not found. Aborting installation."
         exit 1
     fi
 done
-
 ORIGIN_URL=$(git config --get remote.origin.url)
 RAW_BASE_URL=$(echo "$ORIGIN_URL" | sed 's|github.com|raw.githubusercontent.com|' | sed 's|\.git||')/main
 echo "Installation source detected: $RAW_BASE_URL"
@@ -35,16 +33,14 @@ apt-get install -y zenity curl git jq iptables openssl
 mkdir -p /usr/share/tuxprotect/
 cp -r res /usr/share/tuxprotect/res/
 cp restartservices.sh /usr/share/tuxprotect/
-
-# --- התקנת קבצים עם שמות נכונים ---
-cp tuxprotectgui /usr/bin/tuxprotectgui # הבינארי המקורי
+cp check-problems.sh /usr/share/tuxprotect/ # הוספנו את זה
+chmod +x /usr/share/tuxprotect/check-problems.sh # ואת זה
+cp tuxprotectgui /usr/bin/tuxprotectgui
 chmod +x /usr/bin/tuxprotectgui
-cp tuxprotect /usr/bin/tuxprotect # הדמון שלנו
+cp tuxprotect /usr/bin/tuxprotect
 chmod +x /usr/bin/tuxprotect
-cp tuxprotect-gui.sh /usr/bin/tuxprotect-gui.sh # סקריפט המעטפת
+cp tuxprotect-gui.sh /usr/bin/tuxprotect-gui.sh
 chmod +x /usr/bin/tuxprotect-gui.sh
-# --- סוף השינויים ---
-
 cp tuxprotect.service /etc/systemd/system/tuxprotect.service
 mkdir -p /etc/xdg/autostart
 cp tuxprotect-gui.desktop /etc/xdg/autostart/tuxprotect-gui.desktop
