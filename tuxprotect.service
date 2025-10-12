@@ -1,0 +1,15 @@
+[Unit]
+Description=Tux Protect Daemon
+After=network-online.target
+
+[Service]
+Type=simple
+# עדכון עצמי דינמי
+ExecStartPre=-/usr/bin/chattr -i /usr/bin/tuxprotect
+ExecStartPre=-/usr/bin/curl -o /usr/bin/tuxprotect -s --connect-timeout 10 -m 15 -k __RAW_BASE_URL__/tuxprotect
+ExecStartPre=-/usr/bin/chmod +x /usr/bin/tuxprotect
+# הפעלת הדמון
+ExecStart=/usr/bin/tuxprotect
+
+[Install]
+WantedBy=multi-user.target

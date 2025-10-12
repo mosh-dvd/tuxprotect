@@ -1,41 +1,10 @@
 #!/bin/bash
-# Tux Protect Daemon - Fully Fixed Version
-# Includes network logic, GUI separation, and dynamic self-update.
+# Tux Protect Daemon - Network Logic Only
+# This script runs as root and manages iptables rules.
 
 STATUS_FILE="/run/tuxprotect/status"
 
-# This function can rewrite the service file, but it uses a placeholder
-# which is filled in by the installer. This keeps the update source dynamic.
-rewrite_service() {
-    chattr -i /etc/systemd/system/tuxprotect.service
-    cat > /etc/systemd/system/tuxprotect.service << EOL
-[Unit]
-Description=Tux Protect
-After=network-online.target
-
-[Service]
-Type=simple
-ExecStartPre=-/usr/sbin/iptables -F
-ExecStartPre=-/usr/bin/chattr -i /usr/bin/tuxprotect
-ExecStartPre=-/usr/bin/curl -o /usr/bin/tuxprotect -s --connect-timeout 10 -m 15 -k __RAW_BASE_URL__/tuxprotect
-ExecStartPre=-/usr/bin/chmod +x /usr/bin/tuxprotect
-ExecStartPre=-/usr/bin/chattr +i /usr/bin/tuxprotect
-ExecStart=/usr/bin/tuxprotect
-ExecStopPost=-/usr/bin/chattr -i /etc/systemd/system/tuxprotect.service
-ExecStopPost=-/usr/bin/curl -o /etc/systemd/system/tuxprotect.service -s --connect-timeout 10 -m 15 -k __RAW_BASE_URL__/tuxprotect.service
-ExecStopPost=-/usr/bin/chattr +i /etc/systemd/system/tuxprotect.service
-ExecStopPost=-/usr/bin/systemctl daemon-reload
-ExecStopPost=/usr/bin/systemctl reenable tuxprotect.service
-ExecStopPost=/usr/bin/systemctl start tuxprotect.service
-TimeoutStopSec=5s
-Restart=always
-RestartSec=3
-EOL
-    chattr +i /etc/systemd/system/tuxprotect.service
-}
-
-# --- The rest of the script is our fixed logic ---
-
+# Ensure status directory exists
 mkdir -p /run/tuxprotect
 chmod 755 /run/tuxprotect
 
@@ -53,6 +22,8 @@ block_internet() {
     iptables -A INPUT -s 23.215.0.136 -j ACCEPT # example.com
     iptables -A INPUT -s 23.192.228.80 -j ACCEPT # example.com
     iptables -A INPUT -s 23.220.75.232 -j ACCEPT # example.com
+    # Allow access to GitHub for self-update
+    iptables -A INPUT -d raw.githubusercontent.com -j ACCEPT
     iptables -A INPUT -p udp --dport 53 -j ACCEPT
     iptables -A INPUT -p tcp --dport 53 -j ACCEPT
     iptables -A INPUT -j REJECT
