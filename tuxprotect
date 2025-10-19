@@ -1,9 +1,9 @@
 #!/bin/bash
-# Tux Protect Daemon - Stable Version with Retries
+# Tux Protect Daemon - Smart Logic Version
 
 STATUS_FILE="/run/tuxprotect/status"
-FAILURE_COUNT=0
-FAILURE_THRESHOLD=3 # מספר הכשלונות הרצופים לפני שינוי סטטוס
+# משתנה שישמור את המצב התקין האחרון
+LAST_KNOWN_STATUS="unknown"
 
 mkdir -p /run/tuxprotect; chmod 755 /run/tuxprotect
 
@@ -19,25 +19,35 @@ block_internet() {
 }
 
 apply_rules() {
+    # בצע את שתי הבדיקות ונשמור את התוצאות
     isNetFree=$(timeout 5 curl -s "https://api.internal.netfree.link/user/0" | jq -r '.isNetFree')
     issuer=$(timeout 5 sh -c 'echo | openssl s_client -connect example.com:443 2>/dev/null | openssl x509 -noout -issuer | awk -F "=" "/O =/ {print \$NF}"')
 
-    # --- הלוגיקה החדשה ---
-    if [[ $isNetFree == "true" && $issuer =~ "NetFree" ]]; then
-        # אם הבדיקה הצליחה, נאפס את מונה הכשלונות
-        FAILURE_COUNT=0
+    # --- הלוגיקה החדשה והחכמה ---
+
+    # מקרה 1: תשובה חיובית וודאית - אנחנו בנטפרי
+    if [[ "$isNetFree" == "true" && "$issuer" =~ "NetFree" ]]; then
+        LAST_KNOWN_STATUS="open"
         echo "open" > "$STATUS_FILE"
         if iptables -C INPUT -j REJECT; then iptables -F; fi
+
+    # מקרה 2: תשובה שלילית וודאית - אנחנו לא בנטפרי (קיבלנו תשובה, והיא לא נכונה)
+    elif [[ "$isNetFree" == "false" || (! -z "$issuer" && ! "$issuer" =~ "NetFree") ]]; then
+        LAST_KNOWN_STATUS="blocked"
+        if ! curl -s --head http://www.google.com --connect-timeout 5 > /dev/null; then
+            echo "no-internet" > "$STATUS_FILE"
+        else
+            echo "blocked" > "$STATUS_FILE"
+        fi
+        if ! iptables -C INPUT -j REJECT; then block_internet; fi
+
+    # מקרה 3: אין תשובה / שגיאה - לא קיבלנו תשובה ברורה
+    # במקרה זה, אל תשנה כלום. הישאר במצב האחרון שהיה ידוע כתקין.
     else
-        # אם הבדיקה נכשלה, נגדיל את מונה הכשלונות
-        ((FAILURE_COUNT++))
-        # רק אם עברנו את סף הכשלונות, נשנה את הסטטוס
-        if [ "$FAILURE_COUNT" -ge "$FAILURE_THRESHOLD" ]; then
-            if ! curl -s --head http://www.google.com --connect-timeout 5 > /dev/null; then
-                echo "no-internet" > "$STATUS_FILE"
-            else
-                echo "blocked" > "$STATUS_FILE"
-            fi
+        # אם המצב האחרון היה "פתוח", השאר פתוח. אם היה "חסום", השאר חסום.
+        if [ "$LAST_KNOWN_STATUS" == "open" ]; then
+            if iptables -C INPUT -j REJECT; then iptables -F; fi
+        else
             if ! iptables -C INPUT -j REJECT; then block_internet; fi
         fi
     fi		
@@ -46,6 +56,5 @@ apply_rules() {
 block_internet
 while true; do 
     apply_rules
-    # נגדיל מעט את זמן ההמתנה כדי לתת לרשת להתייצב
     sleep 20
 done
