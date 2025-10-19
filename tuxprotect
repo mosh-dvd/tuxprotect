@@ -1,52 +1,51 @@
 #!/bin/bash
+# Tux Protect Daemon - Stable Version with Retries
+
 STATUS_FILE="/run/tuxprotect/status"
+FAILURE_COUNT=0
+FAILURE_THRESHOLD=3 # מספר הכשלונות הרצופים לפני שינוי סטטוס
+
 mkdir -p /run/tuxprotect; chmod 755 /run/tuxprotect
 
 block_internet() {
-    # Clear previous rules
     iptables -F INPUT
-    
-    # --- SAFEGUARD RULES ---
-    # 1. Allow all traffic on the loopback interface (critical for local services)
     iptables -A INPUT -i lo -j ACCEPT
-    
-    # 2. Allow traffic that is part of an already established connection (prevents GUI crash)
-    iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-    
-    # --- YOUR RULES ---
-    # Allow local network traffic
     iptables -A INPUT -s 192.168.0.0/16,127.0.0.0/8,10.0.0.0/8 -j ACCEPT
-    
-    # Allow specific NetFree/update IPs
     iptables -A INPUT -s 148.251.136.195,23.192.228.84,23.220.75.245,23.215.0.138,23.215.0.136,23.192.228.80,23.220.75.232 -j ACCEPT
     iptables -A INPUT -d raw.githubusercontent.com -j ACCEPT
-
-    # Allow DNS
     iptables -A INPUT -p udp --dport 53 -j ACCEPT
     iptables -A INPUT -p tcp --dport 53 -j ACCEPT
-    
-    # --- FINAL RULE ---
-    # Reject all other incoming traffic
     iptables -A INPUT -j REJECT
 }
 
 apply_rules() {
     isNetFree=$(timeout 5 curl -s "https://api.internal.netfree.link/user/0" | jq -r '.isNetFree')
-    issuer=$(timeout 5 sh -c 'echo | openssl s_client -connect example.com:443 2>/dev/null | openssl x509 -noout -issuer | awk -F "=" "/O =/ {print $NF}"')
-    
+    issuer=$(timeout 5 sh -c 'echo | openssl s_client -connect example.com:443 2>/dev/null | openssl x509 -noout -issuer | awk -F "=" "/O =/ {print \$NF}"')
+
+    # --- הלוגיקה החדשה ---
     if [[ $isNetFree == "true" && $issuer =~ "NetFree" ]]; then
+        # אם הבדיקה הצליחה, נאפס את מונה הכשלונות
+        FAILURE_COUNT=0
         echo "open" > "$STATUS_FILE"
-        # If blocking rules exist, flush them all to open the internet
-        if iptables -C INPUT -j REJECT 2>/dev/null; then iptables -F; fi
-    elif ! curl -s --head http://www.google.com --connect-timeout 5 > /dev/null; then
-        echo "no-internet" > "$STATUS_FILE"
-        block_internet
+        if iptables -C INPUT -j REJECT; then iptables -F; fi
     else
-        echo "blocked" > "$STATUS_FILE"
-        block_internet
+        # אם הבדיקה נכשלה, נגדיל את מונה הכשלונות
+        ((FAILURE_COUNT++))
+        # רק אם עברנו את סף הכשלונות, נשנה את הסטטוס
+        if [ "$FAILURE_COUNT" -ge "$FAILURE_THRESHOLD" ]; then
+            if ! curl -s --head http://www.google.com --connect-timeout 5 > /dev/null; then
+                echo "no-internet" > "$STATUS_FILE"
+            else
+                echo "blocked" > "$STATUS_FILE"
+            fi
+            if ! iptables -C INPUT -j REJECT; then block_internet; fi
+        fi
     fi		
 }
 
-# Initial block before the loop starts
 block_internet
-while true; do apply_rules; sleep 15; done
+while true; do 
+    apply_rules
+    # נגדיל מעט את זמן ההמתנה כדי לתת לרשת להתייצב
+    sleep 20
+done
